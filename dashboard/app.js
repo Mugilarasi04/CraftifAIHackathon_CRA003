@@ -5,7 +5,7 @@
 const canvas = document.getElementById('visionCanvas');
 const ctx = canvas.getContext('2d');
 
-let isAudioEnabled = false;
+let isAudioEnabled = true;
 let audioCtx = null;
 let lastSirenTime = 0;
 
@@ -23,7 +23,7 @@ const audioIcon = document.getElementById('audioIcon');
 const audioStatus = document.getElementById('audioStatus');
 const exportAuditBtn = document.getElementById('exportAuditBtn');
 
-// Local fallback state
+// Initial Telemetry State
 let telemetryState = {
   status: "RUNNING",
   fps: 132.4,
@@ -47,26 +47,39 @@ let telemetryState = {
       status: "CLEAR"
     }
   ],
-  workers: [
-    { id: "W-101", bbox: [160, 140, 50, 110], center: [185, 195], ppe: { helmet: true, vest: true, goggles: true }, in_hazard_zone: false, violations: [] },
-    { id: "W-102", bbox: [660, 240, 50, 110], center: [685, 295], ppe: { helmet: false, vest: true, goggles: true }, in_hazard_zone: true, zone_id: "ZONE_OVERHEAD_CRANE_2", violations: ["NO_HELMET", "HAZARD_ZONE_BREACH"] },
-    { id: "W-103", bbox: [220, 390, 50, 110], center: [245, 445], ppe: { helmet: true, vest: false, goggles: false }, in_hazard_zone: false, violations: ["NO_HI_VIS_VEST"] },
-    { id: "W-104", bbox: [780, 480, 50, 110], center: [805, 535], ppe: { helmet: true, vest: true, goggles: true }, in_hazard_zone: false, violations: [] }
-  ],
+  workers: [],
   active_alerts: []
 };
+
+// Auto-unlock Audio Context on any user gesture
+function unlockAudio() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  } catch (e) {
+    console.error("Audio unlock error:", e);
+  }
+}
+window.addEventListener('click', unlockAudio);
+window.addEventListener('mousemove', unlockAudio, { once: true });
+window.addEventListener('keydown', unlockAudio, { once: true });
+window.addEventListener('touchstart', unlockAudio, { once: true });
 
 // Web Audio API Synthesizer for Industrial Siren
 function triggerAudioAlarm() {
   if (!isAudioEnabled) return;
   const now = Date.now();
-  if (now - lastSirenTime < 3000) return; // Cooldown
+  if (now - lastSirenTime < 2500) return; // Cooldown
   lastSirenTime = now;
 
   try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+    unlockAudio();
+    if (!audioCtx) return;
+
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -75,7 +88,7 @@ function triggerAudioAlarm() {
     osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.35);
     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.7);
 
-    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.7);
 
     osc.connect(gain);
@@ -88,21 +101,29 @@ function triggerAudioAlarm() {
   }
 }
 
-toggleAudioBtn.addEventListener('click', () => {
-  isAudioEnabled = !isAudioEnabled;
-  if (isAudioEnabled) {
-    audioIcon.textContent = '🔊';
-    audioStatus.textContent = 'Active';
-    toggleAudioBtn.classList.add('btn-primary');
-    toggleAudioBtn.classList.remove('btn-outline');
-    triggerAudioAlarm();
-  } else {
-    audioIcon.textContent = '🔔';
-    audioStatus.textContent = 'Muted';
-    toggleAudioBtn.classList.remove('btn-primary');
-    toggleAudioBtn.classList.add('btn-outline');
-  }
-});
+if (toggleAudioBtn) {
+  toggleAudioBtn.classList.add('btn-primary');
+  toggleAudioBtn.classList.remove('btn-outline');
+  if (audioIcon) audioIcon.textContent = '🔊';
+  if (audioStatus) audioStatus.textContent = 'Auto-Active';
+
+  toggleAudioBtn.addEventListener('click', () => {
+    isAudioEnabled = !isAudioEnabled;
+    if (isAudioEnabled) {
+      unlockAudio();
+      audioIcon.textContent = '🔊';
+      audioStatus.textContent = 'Auto-Active';
+      toggleAudioBtn.classList.add('btn-primary');
+      toggleAudioBtn.classList.remove('btn-outline');
+      triggerAudioAlarm();
+    } else {
+      audioIcon.textContent = '🔇';
+      audioStatus.textContent = 'Muted';
+      toggleAudioBtn.classList.remove('btn-primary');
+      toggleAudioBtn.classList.add('btn-outline');
+    }
+  });
+}
 
 // Export JSON Audit Log
 exportAuditBtn.addEventListener('click', () => {
@@ -298,6 +319,23 @@ function render() {
 
     ctx.restore();
   });
+
+  // Automatic HUD Alert Strobe Banner on Canvas
+  if (hasActiveHazardBreach) {
+    ctx.save();
+    const pulseAlpha = 0.8 + 0.2 * Math.sin(Date.now() / 150);
+    ctx.fillStyle = `rgba(244, 63, 94, ${pulseAlpha * 0.9})`;
+    ctx.fillRect(w / 2 - 330, 16, 660, 38);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w / 2 - 330, 16, 660, 38);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('🚨 AUTOMATIC DETECTION: GEOFENCE EXCLUSION ZONE BREACH ACTIVE', w / 2, 40);
+    ctx.restore();
+  }
 
   // Update UI Stats
   fpsVal.textContent = telemetryState.fps;
