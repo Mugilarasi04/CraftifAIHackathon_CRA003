@@ -232,12 +232,20 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                     self.send_header("Content-Type", "application/javascript")
                 elif file_path.endswith(".json"):
                     self.send_header("Content-Type", "application/json")
+                elif file_path.endswith(".wav"):
+                    self.send_header("Content-Type", "audio/wav")
                 self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.send_header("Pragma", "no-cache")
+                self.send_header("Expires", "0")
                 self.end_headers()
                 with open(file_path, "rb") as f:
                     self.wfile.write(f.read())
             else:
                 super().do_GET()
+
+    def do_HEAD(self):
+        self.do_GET()
 
 def start_dashboard_server(port=8080):
     server = HTTPServer(("0.0.0.0", port), DashboardRequestHandler)

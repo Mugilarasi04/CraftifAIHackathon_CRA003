@@ -106,39 +106,61 @@ if (audioBanner) {
   });
 }
 
-// Dual-tone high-visibility industrial siren
-function playIndustrialSiren(duration = 0.8) {
+// Triple-Redundant High-Volume Industrial Siren (WAV File + HTML5 Audio + Web Audio Synth)
+function playIndustrialSiren(duration = 1.0) {
+  // Method 1: HTML5 Audio DOM Element with real alarm.wav
+  try {
+    const realAudio = document.getElementById('realAlarmAudio');
+    if (realAudio) {
+      realAudio.currentTime = 0;
+      realAudio.volume = 1.0;
+      const p = realAudio.play();
+      if (p !== undefined) {
+        p.catch(e => console.log("HTML5 audio waiting for user gesture:", e));
+      }
+    }
+  } catch (e) {
+    console.warn("DOM audio error:", e);
+  }
+
+  // Method 2: Dynamic Audio instance
+  try {
+    const snd = new Audio('/alarm.wav');
+    snd.volume = 1.0;
+    snd.play().catch(() => {});
+  } catch (e) {}
+
+  // Method 3: Web Audio API Oscillator
   try {
     initAndUnlockAudio();
-    if (!audioCtx) return;
+    if (audioCtx) {
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
 
-    const t = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(920, t);
+      osc.frequency.setValueAtTime(620, t + 0.2);
+      osc.frequency.setValueAtTime(920, t + 0.4);
+      osc.frequency.setValueAtTime(620, t + 0.6);
 
-    // Piercing industrial horn (880Hz to 587Hz modulation)
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(920, t);
-    osc.frequency.setValueAtTime(620, t + 0.2);
-    osc.frequency.setValueAtTime(920, t + 0.4);
-    osc.frequency.setValueAtTime(620, t + 0.6);
+      gain.gain.setValueAtTime(0.5, t);
+      gain.gain.linearRampToValueAtTime(0.5, t + duration - 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
 
-    gain.gain.setValueAtTime(0.45, t);
-    gain.gain.linearRampToValueAtTime(0.45, t + duration - 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
 
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start(t);
-    osc.stop(t + duration);
-
-    if (audioBanner) {
-      audioBanner.classList.add('alarm-active');
-      setTimeout(() => audioBanner.classList.remove('alarm-active'), duration * 1000);
+      osc.start(t);
+      osc.stop(t + duration);
     }
   } catch (err) {
-    console.error("Audio playback error:", err);
+    console.error("Audio synth error:", err);
+  }
+
+  if (audioBanner) {
+    audioBanner.classList.add('alarm-active');
+    setTimeout(() => audioBanner.classList.remove('alarm-active'), duration * 1000);
   }
 }
 
