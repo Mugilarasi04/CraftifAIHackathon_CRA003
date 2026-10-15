@@ -56,10 +56,13 @@ This allows running 4 concurrent 1080p camera streams on an NVIDIA Jetson Orin N
 ```
 
 ### 6. Evidence Files Included in Repo
-1. **Pipeline IR Graph:** `assets/pipeline_ir_graph.svg` (and `pipegen_export/pipeline_ir.json`)
-2. **TensorRT Speed & Power Benchmark Report:** `assets/tensorrt_benchmark_chart.svg` (and `pipegen_export/compiler/speed_benchmark_report.json`)
-3. **DeepStream Config & Launch Script:** `pipegen_export/deepstream_app_config.txt`, `pipegen_export/run.sh`
-4. **Actionable Output Logs:** `sentinel_incidents.json` and `src/mqtt_publisher.py`
+1. **Pipeline IR Graph:** https://github.com/Mugilarasi04/SentinelEye-Physical-AI/blob/main/assets/pipeline_ir_graph.svg
+2. **TensorRT Speed & Power Benchmark Report:** https://github.com/Mugilarasi04/SentinelEye-Physical-AI/blob/main/assets/tensorrt_benchmark_chart.svg
+3. **DeepStream Config & Launch Script:** https://github.com/Mugilarasi04/SentinelEye-Physical-AI/blob/main/pipegen_export/deepstream_app_config.txt
+4. **Actionable Output Logs:** https://github.com/Mugilarasi04/SentinelEye-Physical-AI/blob/main/sentinel_incidents.json
 
 ### 7. GitHub Repository URL
-*(Push this folder to your GitHub and paste your repository link here, e.g. `https://github.com/<your-username>/sentineleye-physical-ai`)*
+```text
+https://github.com/Mugilarasi04/SentinelEye-Physical-AI
+```
+
