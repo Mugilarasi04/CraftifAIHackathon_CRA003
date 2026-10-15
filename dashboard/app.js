@@ -51,71 +51,115 @@ let telemetryState = {
   active_alerts: []
 };
 
-// Auto-unlock Audio Context on any user gesture
-function unlockAudio() {
+const audioBanner = document.getElementById('audioBanner');
+const audioBannerText = document.getElementById('audioBannerText');
+const bannerIcon = document.getElementById('bannerIcon');
+const testSoundBtn = document.getElementById('testSoundBtn');
+
+// Auto-unlock and arm Web Audio context on first user click/interaction
+function initAndUnlockAudio() {
   try {
     if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
     }
-    if (audioCtx.state === 'suspended') {
+    if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume();
     }
+    if (audioBanner) {
+      audioBanner.classList.add('active');
+      if (bannerIcon) bannerIcon.textContent = '🔊';
+      if (audioBannerText) {
+        audioBannerText.innerHTML = '<strong>Siren Armed &amp; Active:</strong> Real-time buzzer will sound automatically upon hazard breach!';
+      }
+    }
+    if (toggleAudioBtn) {
+      toggleAudioBtn.classList.add('btn-primary');
+      toggleAudioBtn.classList.remove('btn-outline');
+      if (audioIcon) audioIcon.textContent = '🔊';
+      if (audioStatus) audioStatus.textContent = 'Armed';
+    }
   } catch (e) {
-    console.error("Audio unlock error:", e);
+    console.warn("Audio unlock warning:", e);
   }
 }
-window.addEventListener('click', unlockAudio);
-window.addEventListener('mousemove', unlockAudio, { once: true });
-window.addEventListener('keydown', unlockAudio, { once: true });
-window.addEventListener('touchstart', unlockAudio, { once: true });
 
-// Web Audio API Synthesizer for Industrial Siren
-function triggerAudioAlarm() {
-  if (!isAudioEnabled) return;
-  const now = Date.now();
-  if (now - lastSirenTime < 2500) return; // Cooldown
-  lastSirenTime = now;
+// Any click anywhere on the page unlocks audio
+document.addEventListener('click', initAndUnlockAudio);
+document.addEventListener('keydown', initAndUnlockAudio);
 
+// Test Sound button
+if (testSoundBtn) {
+  testSoundBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    initAndUnlockAudio();
+    playIndustrialSiren(0.9);
+  });
+}
+
+if (audioBanner) {
+  audioBanner.addEventListener('click', () => {
+    initAndUnlockAudio();
+    playIndustrialSiren(0.8);
+  });
+}
+
+// Dual-tone high-visibility industrial siren
+function playIndustrialSiren(duration = 0.8) {
   try {
-    unlockAudio();
+    initAndUnlockAudio();
     if (!audioCtx) return;
 
+    const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
+    // Piercing industrial horn (880Hz to 587Hz modulation)
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.35);
-    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.7);
+    osc.frequency.setValueAtTime(920, t);
+    osc.frequency.setValueAtTime(620, t + 0.2);
+    osc.frequency.setValueAtTime(920, t + 0.4);
+    osc.frequency.setValueAtTime(620, t + 0.6);
 
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.7);
+    gain.gain.setValueAtTime(0.45, t);
+    gain.gain.linearRampToValueAtTime(0.45, t + duration - 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.75);
-  } catch (e) {
-    console.error("Audio error:", e);
+    osc.start(t);
+    osc.stop(t + duration);
+
+    if (audioBanner) {
+      audioBanner.classList.add('alarm-active');
+      setTimeout(() => audioBanner.classList.remove('alarm-active'), duration * 1000);
+    }
+  } catch (err) {
+    console.error("Audio playback error:", err);
   }
 }
 
-if (toggleAudioBtn) {
-  toggleAudioBtn.classList.add('btn-primary');
-  toggleAudioBtn.classList.remove('btn-outline');
-  if (audioIcon) audioIcon.textContent = '🔊';
-  if (audioStatus) audioStatus.textContent = 'Auto-Active';
+function triggerAudioAlarm() {
+  if (!isAudioEnabled) return;
+  const now = Date.now();
+  if (now - lastSirenTime < 2400) return; // Cooldown
+  lastSirenTime = now;
+  playIndustrialSiren(1.1);
+}
 
+if (toggleAudioBtn) {
   toggleAudioBtn.addEventListener('click', () => {
     isAudioEnabled = !isAudioEnabled;
     if (isAudioEnabled) {
-      unlockAudio();
+      initAndUnlockAudio();
       audioIcon.textContent = '🔊';
-      audioStatus.textContent = 'Auto-Active';
+      audioStatus.textContent = 'Armed';
       toggleAudioBtn.classList.add('btn-primary');
       toggleAudioBtn.classList.remove('btn-outline');
-      triggerAudioAlarm();
+      playIndustrialSiren(0.6);
     } else {
       audioIcon.textContent = '🔇';
       audioStatus.textContent = 'Muted';

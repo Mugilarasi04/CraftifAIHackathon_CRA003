@@ -56,6 +56,40 @@ body {
   gap: 14px;
 }
 
+/* Audio Banner */
+.audio-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.audio-banner.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.audio-banner.alarm-active {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: #f43f5e;
+  color: #fff;
+  animation: pulse 1s infinite;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Header */
 .top-nav {
   display: flex;
