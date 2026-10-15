@@ -106,8 +106,13 @@ if (audioBanner) {
   });
 }
 
-// Triple-Redundant High-Volume Industrial Siren (WAV File + HTML5 Audio + Web Audio Synth)
+// Quad-Redundant High-Volume Industrial Siren (Hardware System Audio + WAV File + HTML5 Audio + Web Audio Synth)
 function playIndustrialSiren(duration = 1.0) {
+  // Method 0: Trigger Hardware Mac System Speaker Siren directly via Python CoreAudio!
+  try {
+    fetch('/api/test-sound').catch(() => {});
+  } catch (e) {}
+
   // Method 1: HTML5 Audio DOM Element with real alarm.wav
   try {
     const realAudio = document.getElementById('realAlarmAudio');

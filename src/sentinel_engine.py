@@ -24,6 +24,25 @@ from urllib.parse import urlparse
 
 from mqtt_publisher import SafetyMQTTClient
 from incident_logger import IncidentLogger
+import subprocess
+
+LAST_SIREN_PLAY_TIME = 0
+
+def play_hardware_alarm(force=False):
+    global LAST_SIREN_PLAY_TIME
+    now = time.time()
+    if not force and (now - LAST_SIREN_PLAY_TIME < 3.0):
+        return
+    LAST_SIREN_PLAY_TIME = now
+    try:
+        wav_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard", "alarm.wav")
+        if os.path.exists(wav_path):
+            if sys.platform == "darwin":
+                subprocess.Popen(["afplay", "-v", "2", wav_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif sys.platform.startswith("linux"):
+                subprocess.Popen(["aplay", wav_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"[AUDIO ERR] {e}")
 
 # Global state for dashboard streaming
 CURRENT_TELEMETRY = {
@@ -130,6 +149,7 @@ class SentinelPipelineEngine:
                     current_zone = zone["id"]
                     zones_status[zone["id"]] = "BREACH"
                     violations.append(f"HAZARD_ZONE_BREACH: {zone['name']}")
+                    play_hardware_alarm()
                     break
 
             # Actionable Alert Generation
@@ -214,6 +234,13 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                     self.wfile.write(f.read().encode("utf-8"))
             else:
                 self.wfile.write(b"[]")
+        elif parsed.path == "/api/test-sound":
+            play_hardware_alarm(force=True)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"status":"HARDWARE_ALARM_PLAYED"}')
         else:
             # Serve dashboard static files
             dashboard_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard")
