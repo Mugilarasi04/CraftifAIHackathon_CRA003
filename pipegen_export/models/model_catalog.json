@@ -1,0 +1,40 @@
+{
+  "models": [
+    {
+      "model_id": "yolov8x_safety_detector",
+      "framework": "PyTorch / ONNX",
+      "input_layer": "images:0",
+      "input_dims": [1, 3, 640, 640],
+      "output_layers": ["output0"],
+      "classes": ["person", "forklift", "excavator", "hazard_barrel", "overhead_crane"],
+      "source": "CraftifAI Model Catalog / Fine-Tuned Industrial Safety Hub",
+      "onnx_export_args": {
+        "opset": 17,
+        "dynamic_axes": { "images": { "0": "batch" }, "output0": { "0": "batch" } }
+      }
+    },
+    {
+      "model_id": "ppe_classifier_resnet50",
+      "framework": "ONNX",
+      "input_dims": [1, 3, 224, 224],
+      "output_layers": ["ppe_logits"],
+      "attributes": {
+        "head_protection": ["helmet_detected", "no_helmet"],
+        "torso_protection": ["hi_vis_vest", "regular_clothing"],
+        "eye_protection": ["safety_glasses", "no_glasses"]
+      }
+    },
+    {
+      "model_id": "yolov8_pose_fall_detector",
+      "framework": "ONNX",
+      "input_dims": [1, 3, 640, 640],
+      "keypoints": [
+        "nose", "left_eye", "right_eye", "left_ear", "right_ear",
+        "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
+        "left_wrist", "right_wrist", "left_hip", "right_hip",
+        "left_knee", "right_knee", "left_ankle", "right_ankle"
+      ],
+      "distress_logic": "Vector torso angle > 60 deg from vertical + z-acceleration threshold + motionless timeout > 2.5s"
+    }
+  ]
+}

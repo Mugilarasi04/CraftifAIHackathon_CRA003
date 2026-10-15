@@ -1,0 +1,5 @@
+person
+forklift
+excavator
+hazard_barrel
+overhead_crane

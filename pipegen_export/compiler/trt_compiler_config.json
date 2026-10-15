@@ -1,0 +1,22 @@
+{
+  "compiler_version": "TensorRT 8.6.2.3",
+  "builder_flag": ["FP16", "INT8"],
+  "calibration_dataset": "industrial_safety_calibration_500_frames",
+  "calibration_algorithm": "EntropyCalibratorV2",
+  "workspace_size_mb": 4096,
+  "layer_fusion": {
+    "conv_bn_relu_fusion": true,
+    "residual_fusion": true,
+    "qdq_insertion": true
+  },
+  "tactics": {
+    "enable_cudnn": true,
+    "enable_cublas": true,
+    "enable_cublas_lt": true
+  },
+  "target_hardware": {
+    "platform": "NVIDIA Jetson Orin Nano / RTX 4070 Edge Box",
+    "compute_capability": "sm_89 / sm_87",
+    "dla_cores": 0
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "pipeline_version": "0.5.1",
+  "project_name": "SentinelEye-Workplace-Safety-Sentinel",
+  "author": "HackWithBangalore Finalist Team",
+  "track": "Track A - Perception (PipeGen)",
+  "target_platform": {
+    "arch": "x86_64 / aarch64",
+    "accelerator": "NVIDIA Jetson Orin / RTX 40-Series GPU",
+    "cuda_version": "12.2",
+    "tensorrt_version": "8.6.2",
+    "deepstream_version": "6.3 / 7.0"
+  },
+  "pipeline_ir": {
+    "stages": [
+      {
+        "stage_id": 1,
+        "name": "Requirement",
+        "description": "Multi-hazard industrial safety monitoring: detect unauthorized personnel in heavy equipment hazard exclusion zones, verify required PPE (helmet/vest/goggles), and flag worker falls or distress postures in real time with sub-30ms latency.",
+        "input_specs": {
+          "sources": ["RTSP Stream", "USB Camera", "MP4 Video Feed"],
+          "resolution": "1920x1080",
+          "framerate": 30
+        },
+        "kpis": {
+          "target_fps": ">= 60 FPS",
+          "max_end_to_end_latency_ms": 25.0,
+          "precision_mode": "INT8 / FP16 Quantized",
+          "actionable_outputs": ["MQTT Event Stream", "Structured JSON Incident Logs", "Live RTSP OSD Stream"]
+        }
+      },
+      {
+        "stage_id": 2,
+        "name": "Pipeline IR",
+        "graph": {
+          "nodes": [
+            {
+              "id": "node_source",
+              "type": "NvMultiStreamInput",
+              "component": "nvv4l2camerasrc / nvurisrcbin",
+              "params": {
+                "num_sources": 1,
+                "width": 1920,
+                "height": 1080,
+                "format": "NV12"
+              }
+            },
+            {
+              "id": "node_preprocess",
+              "type": "NvStreamMuxPreprocessor",
+              "component": "nvstreammux",
+              "params": {
+                "batch_size": 1,
+                "batched_push_timeout": 40000,
+                "width": 1280,
+                "height": 720,
+                "gpu_id": 0
+              }
+            },
+            {
+              "id": "node_primary_detector",
+              "type": "TensorRT_PGIE",
+              "component": "nvinfer_primary",
+              "params": {
+                "model_name": "yolov8x_safety_person_detector",
+                "onnx_model": "models/yolov8x_safety.onnx",
+                "engine_file": "compiler/engine_yolov8x_int8.engine",
+                "precision": "INT8",
+                "classes": ["person", "heavy_machinery", "forklift"],
+                "confidence_threshold": 0.55
+              }
+            },
+            {
+              "id": "node_tracker",
+              "type": "NvDCF_Tracker",
+              "component": "nvtracker",
+              "params": {
+                "tracker_width": 640,
+                "tracker_height": 384,
+                "ll_config_file": "compiler/nvdcf_tracker_config.yml",
+                "enable_past_frame": true,
+                "tracking_id_preservation": true
+              }
+            },
+            {
+              "id": "node_secondary_ppe_classifier",
+              "type": "TensorRT_SGIE",
+              "component": "nvinfer_secondary",
+              "params": {
+                "model_name": "ppe_compliance_resnet50",
+                "engine_file": "compiler/engine_ppe_fp16.engine",
+                "precision": "FP16",
+                "operate_on_class": "person",
+                "labels": ["helmet_on", "helmet_off", "vest_on", "vest_off", "goggles_on", "goggles_off"]
+              }
+            },
+            {
+              "id": "node_pose_fall_detector",
+              "type": "TensorRT_PoseKeypoint",
+              "component": "nvinfer_pose",
+              "params": {
+                "model_name": "yolov8n_pose_fall",
+                "engine_file": "compiler/engine_yolov8_pose_int8.engine",
+                "precision": "INT8",
+                "keypoint_count": 17,
+                "fall_posture_angle_threshold": 65.0
+              }
+            },
+            {
+              "id": "node_spatial_geofencing",
+              "type": "AnalyticsSpatialReasoning",
+              "component": "nvdsanalytics",
+              "params": {
+                "zones": [
+                  {
+                    "zone_id": "ZONE_DANGER_FORKLIFT_BAY_1",
+                    "type": "exclusion_zone",
+                    "polygon": [[240, 480], [780, 480], [860, 960], [180, 960]],
+                    "severity": "CRITICAL"
+                  },
+                  {
+                    "zone_id": "ZONE_CRANE_SUSPENDED_LOAD_2",
+                    "type": "exclusion_zone",
+                    "polygon": [[1050, 220], [1750, 220], [1820, 720], [980, 720]],
+                    "severity": "EMERGENCY"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "node_actionable_sink",
+              "type": "ActionableTelemetrySink",
+              "component": "nvmsgbroker_mqtt",
+              "params": {
+                "protocol": "MQTTv3.1.1",
+                "broker_uri": "tcp://localhost:1883",
+                "topic": "sentinel/workplace/incident_alerts",
+                "format": "JSON_SCHEMA_RFC7946",
+                "local_audit_log": "sentinel_incidents.json"
+              }
+            },
+            {
+              "id": "node_osd_display",
+              "type": "NvOSD_Renderer",
+              "component": "nvdsosd",
+              "params": {
+                "clock_font_size": 14,
+                "show_fps": true,
+                "render_bbox": true,
+                "render_spatial_zones": true
+              }
+            }
+          ],
+          "edges": [
+            { "from": "node_source", "to": "node_preprocess" },
+            { "from": "node_preprocess", "to": "node_primary_detector" },
+            { "from": "node_primary_detector", "to": "node_tracker" },
+            { "from": "node_tracker", "to": "node_secondary_ppe_classifier" },
+            { "from": "node_tracker", "to": "node_pose_fall_detector" },
+            { "from": "node_secondary_ppe_classifier", "to": "node_spatial_geofencing" },
+            { "from": "node_pose_fall_detector", "to": "node_spatial_geofencing" },
+            { "from": "node_spatial_geofencing", "to": "node_actionable_sink" },
+            { "from": "node_spatial_geofencing", "to": "node_osd_display" }
+          ]
+        }
+      },
+      {
+        "stage_id": 3,
+        "name": "Model",
+        "description": "Selected state-of-the-art vision models fine-tuned for industrial PPE detection and rapid keypoint analysis, exported to standard ONNX with dynamic batch support."
+      },
+      {
+        "stage_id": 4,
+        "name": "Compiler",
+        "description": "PipeGen TensorRT compilation engine producing optimized execution graph with layer fusion, kernel auto-tuning, and INT8 post-training quantization."
+      },
+      {
+        "stage_id": 5,
+        "name": "Run",
+        "description": "Deployment executable running as a continuous high-throughput DeepStream edge container streaming telemetry, MQTT alerts, and interactive dashboard."
+      }
+    ]
+  }
+}

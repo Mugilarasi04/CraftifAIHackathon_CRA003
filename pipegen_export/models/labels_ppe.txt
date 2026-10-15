@@ -1,0 +1,6 @@
+helmet_compliant
+helmet_missing
+vest_compliant
+vest_missing
+eye_goggles_compliant
+eye_goggles_missing

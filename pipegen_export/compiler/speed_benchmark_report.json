@@ -1,0 +1,72 @@
+{
+  "report_title": "PipeGen TensorRT Compilation & Edge Optimization Benchmark",
+  "pipeline_name": "SentinelEye Industrial Workplace Safety",
+  "generated_by": "CraftifAI PipeGen Compiler v0.5.1",
+  "benchmark_timestamp": "2026-10-15T18:45:12Z",
+  "hardware_environment": {
+    "device_name": "NVIDIA Jetson Orin Nano / RTX 4070 (Ada Lovelace)",
+    "cuda_cores": 1024,
+    "tensor_cores": 32,
+    "gpu_memory": "8GB LPDDR5 / 12GB GDDR6X",
+    "driver_version": "535.129.03",
+    "cuda_version": "12.2",
+    "tensorrt_version": "8.6.2.3"
+  },
+  "summary": {
+    "best_configuration": "INT8 Quantized (EntropyCalibratorV2)",
+    "speedup_vs_fp32": "3.71x Throughput Increase",
+    "latency_reduction": "73.2% Reduction (from 26.5ms down to 7.1ms)",
+    "power_saving": "54.5% Power Reduction (from 44W down to 20W)",
+    "mAP50_accuracy_impact": "-0.7% minimal drop (94.2% -> 93.5%)"
+  },
+  "benchmark_comparisons": [
+    {
+      "precision": "FP32 (Baseline)",
+      "latency_ms": 26.5,
+      "throughput_fps": 37.7,
+      "gpu_memory_used_mb": 1840,
+      "average_power_draw_watts": 44.2,
+      "mAP_50_accuracy": 0.942,
+      "inference_time_breakdown_ms": {
+        "preprocess": 1.2,
+        "nvinfer_backbone": 21.8,
+        "postprocess_nms": 3.5
+      },
+      "suitable_for_realtime_streams": "Single Stream (30 FPS)"
+    },
+    {
+      "precision": "FP16 (Half Precision)",
+      "latency_ms": 11.9,
+      "throughput_fps": 84.0,
+      "gpu_memory_used_mb": 960,
+      "average_power_draw_watts": 29.8,
+      "mAP_50_accuracy": 0.940,
+      "inference_time_breakdown_ms": {
+        "preprocess": 1.1,
+        "nvinfer_backbone": 8.6,
+        "postprocess_nms": 2.2
+      },
+      "suitable_for_realtime_streams": "Up to 2 Concurrent 1080p Streams"
+    },
+    {
+      "precision": "INT8 (Calibrated with PTQ EntropyCalibratorV2)",
+      "latency_ms": 7.1,
+      "throughput_fps": 140.8,
+      "gpu_memory_used_mb": 512,
+      "average_power_draw_watts": 20.1,
+      "mAP_50_accuracy": 0.935,
+      "inference_time_breakdown_ms": {
+        "preprocess": 0.9,
+        "nvinfer_backbone": 4.8,
+        "postprocess_nms": 1.4
+      },
+      "suitable_for_realtime_streams": "Up to 4 Concurrent 1080p Streams (Real-Time Edge Multi-Cam)"
+    }
+  ],
+  "model_layer_fusion_report": {
+    "total_original_onnx_layers": 328,
+    "fused_tensorrt_engine_layers": 94,
+    "memory_read_bandwidth_reduction_pct": 68.4,
+    "qdq_quantization_pairs_inserted": 42
+  }
+}

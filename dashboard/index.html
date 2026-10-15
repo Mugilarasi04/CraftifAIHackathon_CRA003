@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelEye — Autonomous Workplace Safety & Edge Physical AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header / Navbar -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">SENTINEL<span class="accent">EYE</span></span>
+          <span class="brand-sub">CraftifAI PipeGen Track A &bull; Physical AI Sentinel</span>
+        </div>
+      </div>
+
+      <div class="nav-badges">
+        <div class="badge pulse-badge">
+          <span class="dot live-dot"></span> LIVE EDGE STREAM
+        </div>
+        <div class="badge engine-badge" id="engineBadge">
+          <span class="badge-icon">⚡</span> TensorRT INT8 (Quantized)
+        </div>
+        <div class="badge status-badge">
+          <span class="badge-icon">📡</span> MQTT Broker: ONLINE
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button class="btn btn-outline" id="toggleAudioBtn" title="Toggle Alarm Siren">
+          <span id="audioIcon">🔔</span> Alarm Audio: <span id="audioStatus">Muted</span>
+        </button>
+        <button class="btn btn-primary" id="exportAuditBtn">
+          <span>📑</span> Export JSON Audit Log
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="dashboard-body">
+      <!-- Left Column: Vision Canvas & Stream -->
+      <section class="viewport-card glass-panel">
+        <div class="card-header">
+          <div class="header-left">
+            <h2 class="section-title">CAM-01: Industrial Assembly & Forklift Bay</h2>
+            <span class="resolution-tag">1080p &bull; DeepStream Pipeline IR Active</span>
+          </div>
+          <div class="telemetry-bar">
+            <div class="tel-item"><span class="tel-label">THROUGHPUT</span><span class="tel-val" id="fpsVal">128.4</span> <span class="unit">FPS</span></div>
+            <div class="tel-item"><span class="tel-label">INFER LATENCY</span><span class="tel-val highlight" id="latencyVal">7.4</span> <span class="unit">ms</span></div>
+            <div class="tel-item"><span class="tel-label">EDGE POWER</span><span class="tel-val" id="powerVal">19.8</span> <span class="unit">W</span></div>
+          </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+          <canvas id="visionCanvas" width="1000" height="620"></canvas>
+          <div class="hud-overlay">
+            <div class="hud-crosshair tl"></div>
+            <div class="hud-crosshair tr"></div>
+            <div class="hud-crosshair bl"></div>
+            <div class="hud-crosshair br"></div>
+            <div class="scanline"></div>
+          </div>
+          <div class="stream-legend">
+            <span class="legend-chip zone-critical"><span class="indicator"></span> Forklift Loading Zone (Exclusion)</span>
+            <span class="legend-chip zone-emergency"><span class="indicator"></span> Overhead Crane Danger Zone</span>
+            <span class="legend-chip worker-compliant"><span class="indicator"></span> Full PPE Compliant</span>
+            <span class="legend-chip worker-violation"><span class="indicator"></span> Violation Alert</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Incident Feed & Analytics -->
+      <aside class="sidebar-column">
+        <!-- Live Actionable MQTT Alert Stream -->
+        <div class="side-card glass-panel alert-section">
+          <div class="card-header compact">
+            <h3 class="side-title"><span class="bell-glow">🚨</span> Actionable Real-Time Alerts</h3>
+            <span class="counter-badge" id="violationCounter">0 Violations</span>
+          </div>
+          <div class="alert-feed-list" id="alertFeedList">
+            <!-- Dynamic alerts inserted here -->
+            <div class="empty-feed-placeholder">
+              <span>🛡️</span> All workers currently compliant. Watching active zones...
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Metrics & Compliance -->
+        <div class="side-card glass-panel metrics-section">
+          <div class="card-header compact">
+            <h3 class="side-title">📊 Edge Optimization & KPIs</h3>
+          </div>
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="m-label">Active Personnel</span>
+              <span class="m-val" id="activeWorkersVal">4</span>
+              <span class="m-sub">Tracked by NvDCF</span>
+            </div>
+            <div class="metric-box">
+              <span class="m-label">PPE Compliance Rate</span>
+              <span class="m-val accent-green" id="complianceRateVal">75%</span>
+              <span class="m-sub">Helmet, Vest & Goggles</span>
+            </div>
+            <div class="metric-box">
+              <span class="m-label">Hazard Zone Status</span>
+              <span class="m-val" id="zoneSafetyStatus">SAFE</span>
+              <span class="m-sub">0 Active Breaches</span>
+            </div>
+            <div class="metric-box">
+              <span class="m-label">TensorRT Acceleration</span>
+              <span class="m-val accent-blue">3.71x</span>
+              <span class="m-sub">Speedup vs FP32</span>
+            </div>
+          </div>
+
+          <!-- Speed & Accuracy Comparison Mini-Chart -->
+          <div class="comp-chart-container">
+            <div class="comp-chart-title">TensorRT Optimization Benchmark (PipeGen Stage 4)</div>
+            <div class="bar-row">
+              <span class="bar-label">FP32 Baseline</span>
+              <div class="bar-track"><div class="bar-fill fp32" style="width: 27%;"></div></div>
+              <span class="bar-score">38 FPS (26.5ms)</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">FP16 Half</span>
+              <div class="bar-track"><div class="bar-fill fp16" style="width: 60%;"></div></div>
+              <span class="bar-score">84 FPS (11.9ms)</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">INT8 Calibrated</span>
+              <div class="bar-track"><div class="bar-fill int8" style="width: 100%;"></div></div>
+              <span class="bar-score highlight">141 FPS (7.1ms)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PipeGen 5-Stage Traceability -->
+        <div class="side-card glass-panel stages-section">
+          <div class="card-header compact">
+            <h3 class="side-title">🧬 PipeGen 5-Stage Verification</h3>
+          </div>
+          <div class="pipeline-stepper">
+            <div class="step-item completed"><span class="step-num">1</span> <span class="step-text">Requirement Frozen</span></div>
+            <div class="step-item completed"><span class="step-num">2</span> <span class="step-text">Pipeline IR Graph</span></div>
+            <div class="step-item completed"><span class="step-num">3</span> <span class="step-text">ONNX Models Bound</span></div>
+            <div class="step-item completed"><span class="step-num">4</span> <span class="step-text">TensorRT INT8 Compiled</span></div>
+            <div class="step-item active-pulse"><span class="step-num">5</span> <span class="step-text">DeepStream Running Live</span></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
