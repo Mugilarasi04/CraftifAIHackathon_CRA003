@@ -23,6 +23,10 @@ Industrial manufacturing floors, loading docks, and construction yards are high-
 
 ---
 
+![SentinelEye Full Workflow Architecture](full_workflow_slide.png)
+
+---
+
 ## 🏗️ The 5-Stage PipeGen Architecture
 
 In compliance with Track A mandatory requirements, SentinelEye implements the full 5-stage PipeGen lifecycle:
